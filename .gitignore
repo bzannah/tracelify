@@ -10,8 +10,17 @@ __pycache__/
 dist/
 build/
 
-# ChromaDB data
+# uv
+uv.lock
+.python-version
+
+# Data
+data/
 chroma_data/
+
+# Next.js (apps/web)
+node_modules/
+.next/
 
 # IDE
 .idea/

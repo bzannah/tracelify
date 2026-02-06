@@ -4,41 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tracelify is an open-source RAG (Retrieval-Augmented Generation) knowledge vault with chat. It ingests documents, chunks them, embeds them in ChromaDB, and uses LLMs (OpenAI for embeddings, Anthropic Claude for chat) to answer questions.
-
-## Development Setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-cp .env.example .env  # Then fill in OPENAI_API_KEY and ANTHROPIC_API_KEY
-```
+Tracelify is an open-source RAG (Retrieval-Augmented Generation) knowledge vault with chat. Monorepo with a FastAPI backend (`apps/api`) and docs.
 
 ## Commands
 
 ```bash
-# Run tests
-pytest
-
-# Run a single test
-pytest tests/test_ingest.py::test_name -v
-
-# Run the app (FastAPI)
-uvicorn tracelify.app:app --reload
+make install                                           # Install all dependencies (uses uv)
+make dev-db                                            # Start PostgreSQL (pgvector)
+make dev-api                                           # Start FastAPI dev server
+make test                                              # Run all tests
+cd apps/api && uv run pytest tests/test_health.py -v   # Run a single test file
 ```
 
 ## Architecture
 
-- **src/tracelify/**: Main package (src layout, built with hatchling)
-  - `config.py`: Central configuration — loads `.env`, defines paths (`data/`, `chroma_data/`), chunking params, model names
-  - `ingest.py`: Document loading and text chunking pipeline. `Chunk` dataclass is the core data unit (text + doc_id + metadata)
-- Uses OpenAI `text-embedding-3-small` for embeddings and Anthropic Claude for chat
-- ChromaDB is the vector store, persisted to `chroma_data/` (gitignored)
-- Uploaded documents go to `data/` (auto-created by config)
+- **apps/api/src/tracelify/**: Main backend package
+  - `app.py`: FastAPI app factory (`create_app()`)
+  - `config.py`: Central config — loads `.env`, defines paths, chunking params, model names
+  - `ingest.py`: Document loading and text chunking. `Chunk` dataclass is the core data unit
+  - `routers/`: API endpoint modules (`health.py`, etc.)
+- **apps/api/tests/**: pytest suite with TestClient fixture in `conftest.py`
 
 ## Key Conventions
 
 - Python 3.9+ compatibility required
+- App factory pattern: `create_app()` in `app.py` for testable FastAPI instances
+- Each feature gets its own router in `routers/`
 - Configuration via environment variables (`.env` file, loaded by python-dotenv)
 - Chunk IDs follow the format `{doc_id}::{chunk_index}`
+- Package manager: uv (workspace root at repo root, app package in `apps/api`)
