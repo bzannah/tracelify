@@ -37,7 +37,7 @@ The MVP delivers a working local pipeline: ingest, retrieve, chat with citations
 - **Chunking**: Configurable overlapping text chunking
 - **Embedding**: OpenAI `text-embedding-3-small` (swappable)
 - **Vector storage**: ChromaDB, persisted to disk
-- **Chat**: Anthropic Claude generates answers from retrieved context
+- **Chat**: DeepSeek generates answers from retrieved context (free tier available)
 - **Citations**: Each response includes which chunks were used, with document name and chunk ID
 - **FastAPI backend**: REST API for ingest and chat
 
@@ -57,7 +57,7 @@ The MVP delivers a working local pipeline: ingest, retrieve, chat with citations
 - Conversation history with session persistence
 - Multi-user support with simple API key auth
 - PDF and DOCX ingestion
-- Configurable LLM backend (swap between OpenAI, Anthropic, local models)
+- Configurable LLM backend (swap between DeepSeek, OpenAI, Anthropic, local models)
 
 ### V2 — Organization scale
 

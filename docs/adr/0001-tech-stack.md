@@ -5,7 +5,7 @@
 
 ## Context and Problem
 
-Tracelify is an open-source RAG knowledge vault. The prototype used ChromaDB for vector storage and required OpenAI API keys for embeddings — meaning contributors couldn't run the pipeline without a paid account.
+Tracelify is an open-source RAG knowledge vault. The prototype used ChromaDB for vector storage. We need to finalize the tech stack for embeddings, chat inference, and the rest of the system.
 
 We need a stack that is:
 
@@ -22,8 +22,8 @@ We need a stack that is:
 | Database | PostgreSQL + pgvector |
 | Migrations | Alembic (with SQLAlchemy models) |
 | Frontend | Next.js (Phase 2) |
-| Embeddings | Local CPU embeddings by default, pluggable provider interface |
-| Chat model | Pluggable provider, Anthropic Claude default |
+| Embeddings | OpenAI `text-embedding-3-small` |
+| Chat model | DeepSeek API (`deepseek-chat`), pluggable provider interface |
 
 ### Why these choices
 
@@ -35,9 +35,9 @@ We need a stack that is:
 
 **Next.js.** Largest React ecosystem, extensive learning resources, SSR support. Lowers the barrier for frontend contributors.
 
-**Local CPU embeddings.** Default to `sentence-transformers/all-MiniLM-L6-v2` so the full pipeline runs without API keys. A provider interface lets users swap in OpenAI or Cohere for higher quality.
+**OpenAI `text-embedding-3-small`.** 1536-dimension embeddings with strong retrieval quality. The OpenAI Python SDK is already a dependency, so embeddings and chat use the same client library (DeepSeek's API is OpenAI-compatible).
 
-**Pluggable chat provider.** Anthropic Claude is the default, but the chat layer is behind an interface. Users can plug in OpenAI, Ollama (local), or others.
+**DeepSeek API (`deepseek-chat`).** DeepSeek offers a free tier, making it accessible for contributors and learners. Its API is OpenAI-compatible, so we use the `openai` Python SDK with a different `base_url`. The chat layer is behind a provider interface — users can swap in OpenAI, Anthropic, Ollama (local), or others.
 
 ## Alternatives Considered
 
@@ -67,11 +67,17 @@ Would unify the stack with Next.js (one language everywhere).
 
 **Why not:** The Python AI/ML ecosystem (sentence-transformers, tokenizers, LangChain, etc.) has no Node equivalents of equal quality. The cost of two languages is lower than the cost of fighting the ecosystem.
 
-### OpenAI embeddings as default
+### Local CPU embeddings as default
 
-Higher quality embeddings (`text-embedding-3-small`, 1536 dimensions) with minimal code.
+Local models like `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) run without API keys.
 
-**Why not:** Requires an API key and costs money for every ingestion. Contributors can't run or test the pipeline without a paid account. Local embeddings by default means anyone can clone the repo and run the full system in minutes.
+**Why not:** Significantly lower retrieval quality than `text-embedding-3-small` (1536 dimensions). Adds `sentence-transformers` and `torch` as heavy dependencies (~2 GB). OpenAI's embedding API is low-cost and the SDK is already needed for DeepSeek compatibility.
+
+### Anthropic Claude for chat
+
+High-quality responses, strong instruction following.
+
+**Why not:** No free tier. DeepSeek offers a free tier with comparable quality for a learning/OSS project, and its OpenAI-compatible API means we can use one SDK (`openai`) for both embeddings and chat.
 
 ### SvelteKit / Remix instead of Next.js
 
@@ -89,7 +95,7 @@ Simpler, no ORM dependency, full control.
 
 ### Good
 
-- **Zero API keys for dev.** Local embeddings mean contributors can run the full ingest → retrieve pipeline without any accounts or API spend.
+- **Free chat tier.** DeepSeek's free tier means contributors can run the full pipeline without spending money.
 - **One database.** PostgreSQL handles relational data and vectors. One thing to back up, monitor, query, and reason about.
 - **Familiar tools.** Python, PostgreSQL, React, Alembic — widely known, extensively documented.
 - **No vendor lock-in.** Pluggable provider interfaces for both embeddings and chat. Users choose what fits their budget and privacy needs.
@@ -99,6 +105,7 @@ Simpler, no ORM dependency, full control.
 
 - **Heavier local setup.** PostgreSQL requires Docker or a local install, unlike ChromaDB's embedded mode. Mitigated by `docker-compose.yml`.
 - **Two languages.** Python backend + TypeScript frontend. In practice, most contributions are backend-only or frontend-only, so the overlap cost is low.
-- **Lower default embedding quality.** `all-MiniLM-L6-v2` (384 dimensions) produces noticeably worse retrieval than OpenAI's model (1536 dimensions). Users who need quality should switch providers. We document this clearly.
+- **Two API keys required.** Contributors need both an OpenAI key (embeddings) and a DeepSeek key (chat). Mitigated by DeepSeek's free tier and OpenAI's low embedding costs.
+- **One SDK, two providers.** Both use the `openai` Python SDK but with different base URLs and keys. Could cause confusion — mitigated with clear config naming (`OPENAI_API_KEY` vs `DEEPSEEK_API_KEY`).
 - **pgvector lacks built-in hybrid search.** No native BM25. Implementing keyword + semantic search (F14) will require additional work (e.g., PostgreSQL full-text search + reciprocal rank fusion).
 - **Alembic learning curve.** Contributors unfamiliar with migration workflows need ramp-up time. Mitigated with docs and helper scripts.

@@ -23,9 +23,9 @@ Transforms text chunks into vector embeddings and persists them alongside the or
 
 **Responsibilities:**
 - Embed chunks via the configured embedding model (OpenAI `text-embedding-3-small` for MVP)
-- Store vectors, chunk text, and metadata in ChromaDB
+- Store vectors, chunk text, and metadata in PostgreSQL (pgvector)
 - Handle re-ingestion: delete old chunks for a `doc_id` before inserting new ones
-- Persist the ChromaDB collection to disk (`chroma_data/`)
+- Persist vectors in PostgreSQL
 
 **Key constraint:** Embedding and storage must use the same model. If the embedding model changes, the entire index must be rebuilt.
 
@@ -35,7 +35,7 @@ Given a user query, finds the most relevant chunks and prepares them for prompt 
 
 **Responsibilities:**
 - Embed the query with the same model used for indexing
-- Vector similarity search (cosine distance) against ChromaDB
+- Vector similarity search (cosine distance) against PostgreSQL (pgvector)
 - Return top-k results with text, metadata, and relevance scores
 - Phase 2: reranking pass and hybrid search (BM25 + semantic)
 
@@ -49,7 +49,7 @@ Assembles the LLM prompt from retrieved context, enforces safety boundaries, and
 - System prompt construction with safety instructions
 - Retrieved chunk injection with delimiter isolation
 - Citation metadata assembly (which chunks were used)
-- LLM API call (Anthropic Claude for MVP)
+- LLM API call (DeepSeek API for MVP)
 - Response streaming (SSE via FastAPI)
 - Grounded generation enforcement: answer only from context, admit uncertainty
 
@@ -99,7 +99,7 @@ flowchart TB
 
         subgraph Indexing
             Embed[Embedding Client]
-            Store[ChromaDB Writer]
+            Store[pgvector Writer]
         end
 
         subgraph Retrieval
@@ -117,12 +117,12 @@ flowchart TB
 
     subgraph Trust Boundary: External APIs
         EmbedAPI[OpenAI Embedding API]
-        ChatAPI[Anthropic Claude API]
+        ChatAPI[DeepSeek Chat API]
     end
 
     subgraph Trust Boundary: Local Storage
         Disk[(data/ files)]
-        VectorDB[(chroma_data/)]
+        VectorDB[(PostgreSQL / pgvector)]
     end
 
     User -->|upload file| API
@@ -163,7 +163,7 @@ User uploads file
   → Text extracted and normalized
   → Text split into overlapping chunks
   → Each chunk embedded via OpenAI API
-  → Vectors + text + metadata stored in ChromaDB
+  → Vectors + text + metadata stored in PostgreSQL (pgvector)
   → Document ID returned to user
 ```
 
@@ -172,13 +172,13 @@ User uploads file
 ```
 User sends question
   → Question embedded via OpenAI API (same model as indexing)
-  → ChromaDB cosine similarity search → top-k chunks
+  → pgvector cosine similarity search → top-k chunks
   → Chunks scored and ranked
   → Prompt assembled:
       - System prompt (safety instructions, grounding rules)
       - Retrieved chunks wrapped in delimiters
       - User question
-  → Prompt sent to Anthropic Claude API
+  → Prompt sent to DeepSeek API
   → Response streamed back with citation list
 ```
 
@@ -191,7 +191,7 @@ User sends question
 | Boundary | Inside | Outside | Crossing |
 |----------|--------|---------|----------|
 | **User → Server** | FastAPI app | User/client | HTTP requests; validated at the API layer |
-| **Server → External APIs** | Tracelify logic | OpenAI, Anthropic | API calls over HTTPS; API keys sent in headers |
+| **Server → External APIs** | Tracelify logic | OpenAI, DeepSeek | API calls over HTTPS; API keys sent in headers |
 | **Server → Local Storage** | Application code | Filesystem | File I/O; paths are constructed internally, never from user input |
 | **Retrieved Content → LLM Prompt** | System prompt, user question | Document chunks | Chunks are untrusted data injected into a trusted prompt |
 
@@ -201,11 +201,11 @@ User sends question
 
 2. **Document content is untrusted.** Any uploaded document could contain adversarial text designed to manipulate the LLM. The system treats all retrieved chunks as data, never as instructions.
 
-3. **API keys are secrets.** OpenAI and Anthropic API keys are loaded from `.env` and never exposed in responses, logs, or error messages.
+3. **API keys are secrets.** OpenAI and DeepSeek API keys are loaded from `.env` and never exposed in responses, logs, or error messages.
 
 4. **Local storage is trusted.** The `data/` and `chroma_data/` directories are assumed to be accessible only to the server process. No encryption at rest in MVP.
 
-5. **External APIs are trusted but limited.** We trust OpenAI and Anthropic to process our data per their terms, but we minimize what we send: only chunk text (to OpenAI for embedding) and chunk text + user question (to Anthropic for chat). No filenames, paths, or system metadata are sent.
+5. **External APIs are trusted but limited.** We trust OpenAI and DeepSeek to process our data per their terms, but we minimize what we send: only chunk text (to OpenAI for embedding) and chunk text + user question (to DeepSeek for chat). No filenames, paths, or system metadata are sent.
 
 ---
 
@@ -246,7 +246,7 @@ User sends question
 
 ### T4: API Key Exposure
 
-**Threat:** OpenAI or Anthropic API keys are leaked through error messages, logs, or response bodies.
+**Threat:** OpenAI or DeepSeek API keys are leaked through error messages, logs, or response bodies.
 
 **Mitigations:**
 - **Environment variable loading.** Keys are read from `.env` via `python-dotenv`, never hardcoded.

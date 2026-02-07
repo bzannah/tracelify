@@ -10,7 +10,7 @@ load_dotenv()
 
 # API Keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
@@ -30,4 +30,5 @@ TOP_K = 3  # Number of chunks to retrieve
 
 # Model settings
 EMBEDDING_MODEL = "text-embedding-3-small"
-CHAT_MODEL = "claude-sonnet-4-20250514"
+CHAT_MODEL = "deepseek-chat"
+DEEPSEEK_BASE_URL = "https://api.deepseek.com"

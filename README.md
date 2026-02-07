@@ -6,7 +6,7 @@ Open-source RAG knowledge vault with chat. Upload documents, chunk and embed the
 
 - Document ingestion with configurable text chunking
 - Vector storage and retrieval
-- Chat interface powered by Claude with retrieved context
+- Chat interface powered by DeepSeek with retrieved context
 - FastAPI backend with file upload support
 
 ## Project Structure
@@ -32,7 +32,7 @@ tracelify/
 ```bash
 # Configure environment
 cp .env.example .env
-# Edit .env with your API keys (Postgres defaults work out of the box)
+# Edit .env with your OPENAI_API_KEY and DEEPSEEK_API_KEY
 
 # Install Python dependencies
 make install

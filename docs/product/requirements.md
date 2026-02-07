@@ -45,7 +45,7 @@ Given a user query, retrieve the most relevant chunks from the vector store.
 
 ### F5: Chat with Citations
 
-Send retrieved context to Claude and return an answer with source references.
+Send retrieved context to the LLM (DeepSeek) and return an answer with source references.
 
 **Acceptance criteria:**
 - [ ] `POST /chat` accepts a `question` string and returns an answer with a `citations` list
@@ -96,7 +96,7 @@ Expand supported file types beyond plain text.
 
 Allow users to swap LLM and embedding providers.
 
-- [ ] Support OpenAI, Anthropic, and local models (e.g., Ollama) for chat
+- [ ] Support DeepSeek, OpenAI, Anthropic, and local models (e.g., Ollama) for chat
 - [ ] Support OpenAI and local models for embeddings
 - [ ] Configuration via `.env` variables: `CHAT_PROVIDER`, `EMBEDDING_PROVIDER`
 - [ ] Provider-specific settings (model name, API base URL)

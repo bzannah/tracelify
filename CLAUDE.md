@@ -20,7 +20,9 @@ cd apps/api && uv run pytest tests/test_health.py -v   # Run a single test file
 
 - **apps/api/src/tracelify/**: Main backend package
   - `app.py`: FastAPI app factory (`create_app()`)
-  - `config.py`: Central config — loads `.env`, defines paths, chunking params, model names
+  - `config.py`: Central config — loads `.env`, defines paths, chunking params, model names (OpenAI for embeddings, DeepSeek for chat)
+  - `errors.py`: Structured error handling (`APIError`, `ErrorResponse`)
+  - `middleware.py`: Request ID middleware (`X-Request-ID`)
   - `ingest.py`: Document loading and text chunking. `Chunk` dataclass is the core data unit
   - `routers/`: API endpoint modules (`health.py`, etc.)
 - **apps/api/tests/**: pytest suite with TestClient fixture in `conftest.py`
