@@ -87,4 +87,5 @@ if file.size > MAX_FILE_SIZE:
 
 ## Versioning
 
-- No API versioning in the MVP. If needed later, use URL prefix: `/v1/documents`.
+- All endpoints are prefixed with `/v1`. Applied at the router level in `app.py`.
+- See `docs/architecture/api-conventions.md` for full API conventions (error schema, request IDs, pagination, auth).
